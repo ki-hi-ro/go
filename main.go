@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
 )
 
 var items []string
@@ -10,6 +11,11 @@ var items []string
 func main() {
 	http.HandleFunc("/", showList)
 	http.HandleFunc("/add", addItem)
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}	
 
 	fmt.Println("http://localhost:8080 で起動中")
 	http.ListenAndServe(":8080", nil)
