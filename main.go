@@ -6,11 +6,17 @@ import (
 	"os"
 )
 
-var items []string
+type Item struct {
+	Name    string
+	Checked bool
+}
+
+var items []Item
 
 func main() {
 	http.HandleFunc("/", showList)
 	http.HandleFunc("/add", addItem)
+	http.HandleFunc("/toggle", toggleItem)
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -68,10 +74,14 @@ func showList(w http.ResponseWriter, r *http.Request) {
 				}
 
 				ul {
-					padding-left: 20px;
+					list-style: none;
+					padding-left: 0;
 				}
 
 				li {
+					display: flex;
+					align-items: center;
+					gap: 8px;
 					font-size: 18px;
 					margin: 10px 0;
 				}
@@ -105,8 +115,35 @@ func showList(w http.ResponseWriter, r *http.Request) {
 				<ul>
 	`)
 
-	for _, item := range items {
-		fmt.Fprintf(w, "<li>%s</li>", item)
+	for i, item := range items {
+
+		checked := ""
+
+		if item.Checked {
+			checked = "checked"
+		}
+
+		style := ""
+
+		if item.Checked {
+			style = "text-decoration: line-through; color: gray;"
+		}
+
+		fmt.Fprintf(
+			w,
+			`
+			<li>
+				<form action="/toggle?id=%d" method="POST" style="display:inline;">
+					<input type="checkbox" onchange="this.form.submit()" %s>
+				</form>
+				<span style="%s">%s</span>
+			</li>
+			`,
+			i,
+			checked,
+			style,
+			item.Name,
+		)
 	}
 
 	fmt.Fprint(w, `
@@ -119,8 +156,26 @@ func showList(w http.ResponseWriter, r *http.Request) {
 
 func addItem(w http.ResponseWriter, r *http.Request) {
 	item := r.FormValue("item")
+
 	if item != "" {
-		items = append(items, item)
+		items = append(items, Item{
+			Name: item,
+			Checked: false,
+		})
+	}
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func toggleItem(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+
+	var index int
+
+	fmt.Sscanf(id, "%d", &index)
+
+	if index >= 0 && index < len(items) {
+		items[index].Checked = !items[index].Checked
 	}
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
