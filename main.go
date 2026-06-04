@@ -17,6 +17,7 @@ func main() {
 	http.HandleFunc("/", showList)
 	http.HandleFunc("/add", addItem)
 	http.HandleFunc("/toggle", toggleItem)
+	http.HandleFunc("/delete", deleteItem)
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -137,6 +138,11 @@ func showList(w http.ResponseWriter, r *http.Request) {
 					<input type="checkbox" onchange="this.form.submit()" %s>
 				</form>
 				<span style="%s">%s</span>
+				<form action="/delete?id=%d"
+							method="POST"
+							style="display:inline;">
+					<button type="submit">🗑️</button>
+				</form>				
 			</li>
 			`,
 			i,
@@ -176,6 +182,22 @@ func toggleItem(w http.ResponseWriter, r *http.Request) {
 
 	if index >= 0 && index < len(items) {
 		items[index].Checked = !items[index].Checked
+	}
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func deleteItem(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+
+	var index int
+	fmt.Sscanf(id, "%d", &index)
+
+	if index >= 0 && index < len(items) {
+		items = append(
+			items[:index],
+			items[index+1:]...,
+		)
 	}
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
